@@ -6,6 +6,7 @@ meta_title: ""
 description: "This is meta description"
 # save as draft
 draft: false
+
 ---
 
 {{< toc >}}
@@ -196,14 +197,15 @@ int main(void)
 }
 ```
 
-```mermaid
+
+{{< mermaid >}}
 flowchart TD
     A[Start] --> B{Is it?}
     B -- Yes --> C[OK]
     C --> D[Rethink]
     D --> B
     B -- No ----> E[End]
-```
+{{< /mermaid >}}
 
 <hr>
 
