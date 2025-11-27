@@ -197,6 +197,11 @@ int main(void)
 }
 ```
 
+### Mermaid Diagrams
+
+Mermaid diagrams support multiple themes. Available themes: `neutral`, `forest`, `dark`, `base`, `default` (custom theme from theme.json). If no theme is specified, the default theme will be used. Use the `default` theme to apply your custom colors from theme.json.
+
+**Example with default  theme:**
 
 {{< mermaid >}}
 flowchart TD

@@ -5,7 +5,7 @@
 </div>
 
 {{/* Get theme parameter */}}
-{{ $theme := .Get "theme" | default "base" }}
+{{ $theme := .Get "theme" | default "default" }}
 {{ $themeColors := site.Data.theme }}
 {{ $defaultColors := $themeColors.colors.default }}
 {{ $hasDarkmode := false }}
@@ -147,7 +147,7 @@
       flowchart: { curve: "basis" }
     };
     
-    if (themeType === "base") {
+    if (themeType === "default") {
       config.themeVariables = getThemeVariables(isDark);
     }
     
