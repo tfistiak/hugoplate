@@ -6,130 +6,13 @@
 
 {{/* Get theme parameter */}}
 {{ $theme := .Get "theme" | default "default" }}
-{{ $themeColors := site.Data.theme }}
-{{ $defaultColors := $themeColors.colors.default }}
-{{ $hasDarkmode := false }}
-{{ if isset $themeColors.colors "darkmode" }}
-  {{ $hasDarkmode = true }}
-{{ end }}
-
-{{/* Extract default colors from theme.json */}}
-{{ $primary := $defaultColors.theme_color.primary }}
-{{ $body := $defaultColors.theme_color.body }}
-{{ $border := $defaultColors.theme_color.border }}
-{{ $light := $defaultColors.theme_color.light }}
-{{ $dark := $defaultColors.theme_color.dark }}
-{{ $text := $defaultColors.text_color.text }}
-{{ $textDark := $defaultColors.text_color.text_dark }}
-{{ $textLight := $defaultColors.text_color.text_light }}
-
-{{/* Extract darkmode colors if exists */}}
-{{ $darkPrimary := "" }}
-{{ $darkBody := "" }}
-{{ $darkBorder := "" }}
-{{ $darkLight := "" }}
-{{ $darkDark := "" }}
-{{ $darkText := "" }}
-{{ $darkTextDark := "" }}
-{{ $darkTextLight := "" }}
-
-{{ if $hasDarkmode }}
-  {{ $darkColors := $themeColors.colors.darkmode }}
-  {{ $darkPrimary = $darkColors.theme_color.primary }}
-  {{ $darkBody = $darkColors.theme_color.body }}
-  {{ $darkBorder = $darkColors.theme_color.border }}
-  {{ $darkLight = $darkColors.theme_color.light }}
-  {{ $darkDark = $darkColors.theme_color.dark }}
-  {{ $darkText = $darkColors.text_color.text }}
-  {{ $darkTextDark = $darkColors.text_color.text_dark }}
-  {{ $darkTextLight = $darkColors.text_color.text_light }}
-{{ end }}
 
 <script type="module">
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/+esm";
-  
-  const hasDarkmode = {{ $hasDarkmode }};
-  
-  // Theme color configurations
-  const themeColors = {
-    light: {
-      primary: "{{ $primary }}",
-      body: "{{ $body }}",
-      light: "{{ $light }}",
-      text: "{{ $text }}",
-      textDark: "{{ $textDark }}"
-    },
-    dark: {
-      primary: "{{ $darkPrimary }}",
-      body: "{{ $darkBody }}",
-      light: "{{ $darkLight }}",
-      text: "{{ $darkText }}",
-      textDark: "{{ $darkTextDark }}"
-    }
-  };
-  
-  const fontConfig = {
-    fontFamily: "{{ site.Data.theme.fonts.font_family.primary | replaceRE `:.*` `` | replaceRE `\\+` ` ` }}, {{ site.Data.theme.fonts.font_family.primary_type }}",
-    fontSize: "{{ site.Data.theme.fonts.font_size.base }}px"
-  };
-  
-  // Build theme variables from color config
-  function buildThemeVariables(colors, isDark) {
-    return {
-      darkMode: isDark,
-      primaryColor: colors.primary,
-      primaryTextColor: colors.body,
-      primaryBorderColor: colors.primary,
-      secondaryColor: colors.light,
-      secondaryTextColor: colors.textDark,
-      secondaryBorderColor: colors.primary,
-      tertiaryColor: colors.body,
-      tertiaryTextColor: colors.text,
-      tertiaryBorderColor: colors.primary,
-      background: colors.body,
-      mainBkg: colors.light,
-      textColor: colors.text,
-      lineColor: colors.primary,
-      noteBkgColor: colors.light,
-      noteTextColor: colors.textDark,
-      noteBorderColor: colors.primary,
-      nodeBorder: colors.primary,
-      clusterBkg: colors.light,
-      clusterBorder: colors.primary,
-      defaultLinkColor: colors.primary,
-      titleColor: colors.textDark,
-      edgeLabelBackground: colors.body,
-      nodeTextColor: colors.textDark,
-      actorBkg: colors.light,
-      actorBorder: colors.primary,
-      actorTextColor: colors.textDark,
-      actorLineColor: colors.primary,
-      signalColor: colors.text,
-      signalTextColor: colors.text,
-      labelBoxBkgColor: colors.light,
-      labelBoxBorderColor: colors.primary,
-      labelTextColor: colors.textDark,
-      loopTextColor: colors.textDark,
-      activationBorderColor: colors.primary,
-      activationBkgColor: colors.light,
-      labelColor: colors.textDark,
-      altBackground: colors.body,
-      classText: colors.text,
-      errorBkgColor: colors.light,
-      errorTextColor: colors.textDark,
-      ...fontConfig
-    };
-  }
-  
-  // Get theme variables based on dark mode
-  function getThemeVariables(isDarkMode) {
-    const colors = (!hasDarkmode || !isDarkMode) ? themeColors.light : themeColors.dark;
-    return buildThemeVariables(colors, hasDarkmode && isDarkMode);
-  }
-  
-  const themeType = "{{ $theme }}";
-  
-  // Store original content and initialize
+
+  const specifiedTheme = "{{ $theme }}" || "default";
+
+  // Store original content
   function storeOriginalContent() {
     document.querySelectorAll('.mermaid').forEach(element => {
       if (!element.hasAttribute('data-original')) {
@@ -137,23 +20,22 @@
       }
     });
   }
-  
+
+  // Get effective theme based on dark mode
+  function getEffectiveTheme(isDarkMode) {
+    return isDarkMode ? 'dark' : specifiedTheme;
+  }
+
   // Build mermaid config
-  function getMermaidConfig(isDark, startOnLoad = true) {
-    const config = {
+  function getMermaidConfig(isDarkMode, startOnLoad = true) {
+    return {
       startOnLoad,
-      theme: themeType,
+      theme: getEffectiveTheme(isDarkMode),
       securityLevel: "loose",
       flowchart: { curve: "basis" }
     };
-    
-    if (themeType === "default") {
-      config.themeVariables = getThemeVariables(isDark);
-    }
-    
-    return config;
   }
-  
+
   // Rerender all diagrams
   function rerenderDiagrams() {
     document.querySelectorAll('.mermaid').forEach(element => {
@@ -165,24 +47,22 @@
     });
     mermaid.run();
   }
-  
+
   // Initial setup
   document.addEventListener('DOMContentLoaded', storeOriginalContent);
-  
-  const isDarkMode = hasDarkmode && document.documentElement.classList.contains('dark');
+
+  const isDarkMode = document.documentElement.classList.contains('dark');
   mermaid.initialize(getMermaidConfig(isDarkMode));
-  
+
   // Watch for dark mode changes
-  if (hasDarkmode) {
-    new MutationObserver(mutations => {
-      if (mutations.some(m => m.attributeName === 'class')) {
-        const isDark = document.documentElement.classList.contains('dark');
-        mermaid.initialize(getMermaidConfig(isDark, false));
-        rerenderDiagrams();
-      }
-    }).observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-  }
+  new MutationObserver(mutations => {
+    if (mutations.some(m => m.attributeName === 'class')) {
+      const isDark = document.documentElement.classList.contains('dark');
+      mermaid.initialize(getMermaidConfig(isDark, false));
+      rerenderDiagrams();
+    }
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
 </script>

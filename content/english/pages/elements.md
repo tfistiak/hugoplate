@@ -199,18 +199,21 @@ int main(void)
 
 ### Mermaid Diagrams
 
-Mermaid diagrams support multiple themes. Available themes: `neutral`, `forest`, `dark`, `base`, `default` (custom theme from theme.json). If no theme is specified, the default theme will be used. Use the `default` theme to apply your custom colors from theme.json.
+Mermaid diagrams support multiple themes. Available themes: `neutral`, `forest`, `dark`, `base`, `default` 
 
-**Example with default  theme:**
+**Example with default theme:**
 
-{{< mermaid >}}
-flowchart TD
-    A[Start] --> B{Is it?}
-    B -- Yes --> C[OK]
-    C --> D[Rethink]
-    D --> B
-    B -- No ----> E[End]
+{{< mermaid theme="forest" >}}
+sequenceDiagram
+	Site->>mermaid: initialize
+	Site->>mermaid: content loaded
+	mermaid->>mermaidAPI: init
+
 {{< /mermaid >}}
+
+
+
+
 
 <hr>
 
