@@ -36,12 +36,48 @@
     };
   }
 
+  // Remove theme config from diagram code in dark mode
+  function processContent(content, isDarkMode) {
+    if (!isDarkMode) return content;
+    
+    // In dark mode, remove theme settings from frontmatter config
+    return content.replace(/(---\s*\n(?:.*\n)*?config:\s*\n)((?:.*\n)*?)(---)/m, (match, before, configContent, after) => {
+      // Remove theme and themeVariables lines
+      const lines = configContent.split('\n');
+      const filtered = lines.filter(line => {
+        // Skip theme line
+        if (/^\s*theme:/.test(line)) return false;
+        // Skip themeVariables line
+        if (/^\s*themeVariables:/.test(line)) {
+          // Also need to skip the nested properties
+          const idx = lines.indexOf(line);
+          const indent = line.search(/\S/);
+          // Mark following indented lines for removal
+          for (let i = idx + 1; i < lines.length; i++) {
+            const nextIndent = lines[i].search(/\S/);
+            if (lines[i].trim() && nextIndent > indent) {
+              lines[i] = null; // Mark for removal
+            } else {
+              break;
+            }
+          }
+          return false;
+        }
+        return line !== null;
+      });
+      
+      return before + filtered.join('\n') + after;
+    });
+  }
+
   // Rerender all diagrams
   function rerenderDiagrams() {
+    const isDark = document.documentElement.classList.contains('dark');
     document.querySelectorAll('.mermaid').forEach(element => {
       const originalContent = element.getAttribute('data-original');
       if (originalContent) {
-        element.innerHTML = originalContent;
+        const content = processContent(originalContent, isDark);
+        element.innerHTML = content;
         element.removeAttribute('data-processed');
       }
     });
@@ -49,7 +85,21 @@
   }
 
   // Initial setup
-  document.addEventListener('DOMContentLoaded', storeOriginalContent);
+  document.addEventListener('DOMContentLoaded', () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    // Store and process content for initial render
+    document.querySelectorAll('.mermaid').forEach(element => {
+      if (!element.hasAttribute('data-original')) {
+        const originalContent = element.textContent.trim();
+        element.setAttribute('data-original', originalContent);
+        
+        // Process content for dark mode on initial load
+        const content = processContent(originalContent, isDark);
+        element.innerHTML = content;
+      }
+    });
+  });
 
   const isDarkMode = document.documentElement.classList.contains('dark');
   mermaid.initialize(getMermaidConfig(isDarkMode));

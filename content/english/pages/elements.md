@@ -203,15 +203,21 @@ Mermaid diagrams support multiple themes. Available themes: `neutral`, `forest`,
 
 **Example with default theme:**
 
-{{< mermaid theme="forest" >}}
+{{< mermaid >}}
+---
+title: Hello Title
+config:
+  theme: base
+  darkmode: true
+  themeVariables:
+    primaryColor: "#00ff00"
+---
 sequenceDiagram
 	Site->>mermaid: initialize
 	Site->>mermaid: content loaded
 	mermaid->>mermaidAPI: init
 
 {{< /mermaid >}}
-
-
 
 
 
