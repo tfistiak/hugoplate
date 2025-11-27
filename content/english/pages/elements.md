@@ -208,9 +208,6 @@ Mermaid diagrams support multiple themes. Available themes: `neutral`, `forest`,
 title: Hello Title
 config:
   theme: base
-  darkmode: true
-  themeVariables:
-    primaryColor: "#00ff00"
 ---
 sequenceDiagram
 	Site->>mermaid: initialize

@@ -1,73 +1,84 @@
 <div class="bg-light dark:bg-darkmode-light p-8 rounded-md mb-6 not-prose">
-  <div class="mermaid">
+  <pre class="mermaid">
     {{ .Inner | safeHTML }}
-  </div>
+  </pre>
 </div>
-
-{{/* Get theme parameter */}}
-{{ $theme := .Get "theme" | default "default" }}
 
 <script type="module">
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/+esm";
 
-  const specifiedTheme = "{{ $theme }}" || "default";
-
-  // Store original content
-  function storeOriginalContent() {
-    document.querySelectorAll('.mermaid').forEach(element => {
-      if (!element.hasAttribute('data-original')) {
-        element.setAttribute('data-original', element.textContent.trim());
+  // Extract theme from frontmatter config
+  function extractThemeFromContent(content) {
+    const configMatch = content.match(/---\s*\n(?:.*\n)*?config:\s*\n((?:.*\n)*?)---/m);
+    if (configMatch) {
+      const themeMatch = configMatch[1].match(/^\s*theme:\s*(\S+)/m);
+      if (themeMatch) {
+        return themeMatch[1];
       }
-    });
-  }
-
-  // Get effective theme based on dark mode
-  function getEffectiveTheme(isDarkMode) {
-    return isDarkMode ? 'dark' : specifiedTheme;
+    }
+    return 'default';
   }
 
   // Build mermaid config
-  function getMermaidConfig(isDarkMode, startOnLoad = true) {
+  function getMermaidConfig(startOnLoad = true) {
     return {
       startOnLoad,
-      theme: getEffectiveTheme(isDarkMode),
+      theme: 'default', 
       securityLevel: "loose",
       flowchart: { curve: "basis" }
     };
   }
 
-  // Remove theme config from diagram code in dark mode
+  // Process content for dark mode
   function processContent(content, isDarkMode) {
     if (!isDarkMode) return content;
     
-    // In dark mode, remove theme settings from frontmatter config
-    return content.replace(/(---\s*\n(?:.*\n)*?config:\s*\n)((?:.*\n)*?)(---)/m, (match, before, configContent, after) => {
-      // Remove theme and themeVariables lines
-      const lines = configContent.split('\n');
-      const filtered = lines.filter(line => {
-        // Skip theme line
-        if (/^\s*theme:/.test(line)) return false;
-        // Skip themeVariables line
-        if (/^\s*themeVariables:/.test(line)) {
-          // Also need to skip the nested properties
-          const idx = lines.indexOf(line);
+    // In dark mode, replace/add theme: dark in frontmatter config
+    const hasFrontmatter = /---\s*\n(?:.*\n)*?---/.test(content);
+    
+    if (hasFrontmatter) {
+      // Remove existing theme and themeVariables, then add theme: dark
+      return content.replace(/(---\s*\n(?:.*\n)*?config:\s*\n)((?:.*\n)*?)(---)/m, (match, before, configContent, after) => {
+        const lines = configContent.split('\n');
+        const filtered = [];
+        let skipUntilDedent = false;
+        let themeVarIndent = 0;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
           const indent = line.search(/\S/);
-          // Mark following indented lines for removal
-          for (let i = idx + 1; i < lines.length; i++) {
-            const nextIndent = lines[i].search(/\S/);
-            if (lines[i].trim() && nextIndent > indent) {
-              lines[i] = null; // Mark for removal
+          
+          // Skip theme line
+          if (/^\s*theme:/.test(line)) continue;
+          
+          // Skip themeVariables and its nested content
+          if (/^\s*themeVariables:/.test(line)) {
+            skipUntilDedent = true;
+            themeVarIndent = indent;
+            continue;
+          }
+          
+          // Continue skipping nested themeVariables content
+          if (skipUntilDedent) {
+            if (line.trim() && indent > themeVarIndent) {
+              continue;
             } else {
-              break;
+              skipUntilDedent = false;
             }
           }
-          return false;
+          
+          filtered.push(line);
         }
-        return line !== null;
+        
+        // Add theme: dark at the beginning of config
+        filtered.unshift('  theme: dark');
+        
+        return before + filtered.join('\n') + after;
       });
-      
-      return before + filtered.join('\n') + after;
-    });
+    } else {
+      // No frontmatter, add it with dark theme
+      return `---\nconfig:\n  theme: dark\n---\n${content}`;
+    }
   }
 
   // Rerender all diagrams
@@ -101,14 +112,13 @@
     });
   });
 
-  const isDarkMode = document.documentElement.classList.contains('dark');
-  mermaid.initialize(getMermaidConfig(isDarkMode));
+  mermaid.initialize(getMermaidConfig());
 
   // Watch for dark mode changes
   new MutationObserver(mutations => {
     if (mutations.some(m => m.attributeName === 'class')) {
       const isDark = document.documentElement.classList.contains('dark');
-      mermaid.initialize(getMermaidConfig(isDark, false));
+      mermaid.initialize(getMermaidConfig(false));
       rerenderDiagrams();
     }
   }).observe(document.documentElement, {
